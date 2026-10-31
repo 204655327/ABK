@@ -6974,42 +6974,42 @@ jobs:
             )
           fi
 
-- name: 收集 vmlinux（KABI 分析用）
-  if: always()
-  run: |
-    set -euo pipefail
-    mkdir -p vmlinux-artifact
+      - name: 收集 vmlinux（KABI 分析用）
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p vmlinux-artifact
 
-    if [ "${{ inputs.android_version }}" == "android12" ] || [ "${{ inputs.android_version }}" == "android13" ]; then
-      SRC_DIR="$KERNEL_ROOT/out/${{ inputs.android_version }}-${{ inputs.kernel_version }}/dist"
-    else
-      SRC_DIR="$KERNEL_ROOT/bazel-bin/common/kernel_aarch64"
-    fi
+          if [ "${{ inputs.android_version }}" == "android12" ] || [ "${{ inputs.android_version }}" == "android13" ]; then
+            SRC_DIR="$KERNEL_ROOT/out/${{ inputs.android_version }}-${{ inputs.kernel_version }}/dist"
+          else
+            SRC_DIR="$KERNEL_ROOT/bazel-bin/common/kernel_aarch64"
+          fi
 
-    copied=0
-    for f in vmlinux vmlinux.symvers System.map Module.symvers; do
-      if [ -f "$SRC_DIR/$f" ]; then
-        cp "$SRC_DIR/$f" "vmlinux-artifact/"
-        echo "已收集: $f"
-        copied=$((copied + 1))
-      fi
-    done
+          copied=0
+          for f in vmlinux vmlinux.symvers System.map Module.symvers; do
+            if [ -f "$SRC_DIR/$f" ]; then
+              cp "$SRC_DIR/$f" "vmlinux-artifact/"
+              echo "已收集: $f"
+              copied=$((copied + 1))
+            fi
+          done
 
-    if [ "$copied" -eq 0 ]; then
-      echo "::warning::未在 $SRC_DIR 找到 vmlinux，跳过收集"
-      exit 0
-    fi
+          if [ "$copied" -eq 0 ]; then
+            echo "::warning::未在 $SRC_DIR 找到 vmlinux，跳过收集"
+            exit 0
+          fi
 
-    # 检查 vmlinux 是否带 BTF（pahole 需要）
-    if [ -f "vmlinux-artifact/vmlinux" ]; then
-      file "vmlinux-artifact/vmlinux" || true
-      python3 - "vmlinux-artifact/vmlinux" <<'PY' || true
-    import sys
-    data = open(sys.argv[1], 'rb').read()
-    i = data.find(b'\x9f\xeb')
-    print(f"BTF magic at: {hex(i) if i != -1 else 'not found'}")
-    PY
-    fi
+          # 检查 vmlinux 是否带 BTF（pahole 需要）
+          if [ -f "vmlinux-artifact/vmlinux" ]; then
+            file "vmlinux-artifact/vmlinux" || true
+            python3 - "vmlinux-artifact/vmlinux" <<'PY' || true
+              import sys
+              data = open(sys.argv[1], 'rb').read()
+              i = data.find(b'\x9f\xeb')
+              print(f"BTF magic at: {hex(i) if i != -1 else 'not found'}")
+            PY
+          fi
     
       - name: 创建 AnyKernel3 压缩包
         run: |
@@ -7125,14 +7125,14 @@ jobs:
             done
           fi
 
-- name: 上传 vmlinux
-  if: always() && hashFiles('vmlinux-artifact/vmlinux') != ''
-  uses: actions/upload-artifact@v6
-  with:
-    name: ${{ inputs.ksu_variant }}_vmlinux-${{ env.CONFIG }}
-    path: vmlinux-artifact/
-    if-no-files-found: warn
-    compression-level: 9
+      - name: 上传 vmlinux
+        if: always() && hashFiles('vmlinux-artifact/vmlinux') != ''
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ inputs.ksu_variant }}_vmlinux-${{ env.CONFIG }}
+          path: vmlinux-artifact/
+          if-no-files-found: warn
+          compression-level: 9
     
       - name: 上传构建产物
         uses: actions/upload-artifact@v6
